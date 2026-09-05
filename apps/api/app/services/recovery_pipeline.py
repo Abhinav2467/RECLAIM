@@ -198,6 +198,10 @@ def process_recovery_pipeline(
             )
         ).scalars().first()
 
+    details_dict = {"trigger_reason": trigger_reason}
+    if intervention_costs:
+        details_dict["intervention_costs"] = {k: str(v) for k, v in intervention_costs.items()}
+
     if case is None:
         case = repo.create_case(
             merchant_id=merchant_id,
@@ -206,7 +210,7 @@ def process_recovery_pipeline(
             payment_id=payment_id,
             status=RecoveryStatus.DETECTED,
             reason=trigger_reason,
-            details=_to_json_safe({"trigger_reason": trigger_reason}),
+            details=_to_json_safe(details_dict),
             context_version=1,
             recoverable_amount=None,
             currency=None,
@@ -221,6 +225,10 @@ def process_recovery_pipeline(
             evidence=_to_json_safe({"payment_id": payment_id, "order_id": order_id}),
             message=f"Recovery case created for {trigger_reason}",
         )
+    elif intervention_costs:
+        existing_details = case.details if isinstance(case.details, dict) else {}
+        existing_details["intervention_costs"] = {k: str(v) for k, v in intervention_costs.items()}
+        repo.update_case_with_version(case.id, case.version, {"details": _to_json_safe(existing_details)})
 
     # 2. Build DecisionContext
     context = build_decision_context(

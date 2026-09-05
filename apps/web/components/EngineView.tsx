@@ -111,22 +111,20 @@ export function EngineView({
   // Extract evaluations & candidate competition data
   const evaluations = selectedCase?.action_evaluations || [];
   
-  // CRITICAL CORRECTNESS FIX FOR NO_ACTION:
-  // When status is NO_ACTION, winningEval is explicitly NULL (No recommended action executed)
-  const winningEval = isNoAction
-    ? null
-    : evaluations.find((e) => e.is_selected) || evaluations[0];
-  const rejectedEvals = isNoAction
-    ? evaluations
-    : evaluations.filter((e) => !e.is_selected);
+  const selectedEval = evaluations.find((e) => e.is_selected);
+  const eligibleEvals = evaluations.filter((e) => e.eligible && e.expected_net_recovery !== null);
+  const sortedEligible = [...eligibleEvals].sort((a, b) => parseFloat(b.expected_net_recovery || "0") - parseFloat(a.expected_net_recovery || "0"));
+  const primaryEval = selectedEval || sortedEligible[0] || evaluations[0];
+  const winningEval = isNoAction ? null : (selectedEval || evaluations[0]);
+  const rejectedEvals = isNoAction ? evaluations : evaluations.filter((e) => !e.is_selected);
 
   // Compute exact arithmetic from authoritative case data
   const recAmount = parseFloat(selectedCase?.recoverable_amount || "0.00");
-  const prob = winningEval?.success_probability ?? 0.75;
-  const cost = parseFloat(winningEval?.intervention_cost || "0.50");
+  const prob = primaryEval?.success_probability ?? 0.80;
+  const cost = parseFloat(primaryEval?.intervention_cost || "50.00");
   const grossValue = recAmount * prob;
-  const netRecovery = winningEval?.expected_net_recovery
-    ? parseFloat(winningEval.expected_net_recovery)
+  const netRecovery = primaryEval?.expected_net_recovery !== undefined && primaryEval?.expected_net_recovery !== null
+    ? parseFloat(primaryEval.expected_net_recovery)
     : grossValue - cost;
 
   // Selected Node Metadata
@@ -493,8 +491,8 @@ export function EngineView({
                   </div>
                   <div className="border-t-2 border-stone-900 pt-2 flex justify-between text-sm font-bold text-stone-900">
                     <span>= Expected Net Recovery</span>
-                    <span className={netRecovery > 0 && !isNoAction ? "text-emerald-700 font-black text-base" : "text-stone-900 font-black text-base"}>
-                      ${isNoAction ? "0.00" : netRecovery.toFixed(2)}
+                    <span className={netRecovery > 0 && !isNoAction ? "text-emerald-700 font-black text-base" : "text-rose-700 font-black text-base"}>
+                      ${netRecovery.toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -510,10 +508,14 @@ export function EngineView({
                       </span>
                     </div>
                     <div className="text-sm font-serif font-medium leading-snug">
-                      Intervention was evaluated and not economically justified.
+                      {netRecovery <= 0
+                        ? "Intervention was evaluated and not economically justified."
+                        : "Intervention was halted by Policy Gate safety constraints."}
                     </div>
                     <p className="text-[11px] font-sans text-stone-300 leading-relaxed">
-                      RECLAIM halted execution because intervention expenditure exceeded expected recovery. Preserved ${parseFloat(selectedCase.recoverable_amount || "0.00").toFixed(2)} merchant capital without unviable expenditure.
+                      {netRecovery <= 0
+                        ? `RECLAIM halted execution because intervention cost ($${cost.toFixed(2)}) exceeded expected gross recovery ($${grossValue.toFixed(2)}), yielding net recovery of $${netRecovery.toFixed(2)} (≤ $0.00). Preserved $${recAmount.toFixed(2)} merchant capital.`
+                        : `RECLAIM halted execution due to policy guardrails. Preserved $${recAmount.toFixed(2)} merchant capital.`}
                     </p>
                   </div>
                 )}

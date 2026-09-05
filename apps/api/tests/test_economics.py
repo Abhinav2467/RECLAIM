@@ -140,3 +140,16 @@ def test_batch_evaluate_requires_probabilities():
         assert False, "Expected KeyError for missing probability"
     except KeyError:
         pass
+
+
+def test_positive_expected_net_recovery_is_economically_viable():
+    """Invariant: Any eligible candidate action with expected_net_recovery > 0 MUST be marked economically_viable = True."""
+    rt = make_revenue_truth(recoverable_amount=Decimal("100.00"))
+    c = make_candidate("notify_customer_failure", eligible=True)
+    p = make_prob(c.action, Decimal("0.60"))
+    costs = {c.action: Decimal("10.00")}
+    ev = evaluate(c, p, rt, costs)
+    assert ev.expected_net_recovery == Decimal("50.00")
+    assert ev.economically_viable is True
+    assert ev.reason == "Expected net recovery positive"
+

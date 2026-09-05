@@ -11,21 +11,26 @@ export function RecoveryCasePanel({ caseData }: RecoveryCasePanelProps) {
   const snapshot = caseData.decision_snapshot;
   const evaluations = snapshot?.action_evaluations || caseData.action_evaluations || [];
   const selectedEval = evaluations.find((e) => e.is_selected);
+  const eligibleEvals = evaluations.filter((e) => e.eligible && e.expected_net_recovery !== null);
+  const sortedEligible = [...eligibleEvals].sort((a, b) => parseFloat(b.expected_net_recovery || "0") - parseFloat(a.expected_net_recovery || "0"));
+  const primaryEval = selectedEval || sortedEligible[0] || evaluations[0];
 
   const isNoAction = caseData.status === "NO_ACTION" || snapshot?.decision === "NO_ACTION";
   const isRecovered = caseData.status === "RECOVERED";
   const isVerifying = caseData.status === "VERIFYING";
 
-  const decRecoverable = snapshot?.recoverable_amount || caseData.recoverable_amount || "199.99";
+  const decRecoverable = snapshot?.recoverable_amount || caseData.recoverable_amount || "47.00";
   const currentAtRisk = caseData.current_state?.recoverable_amount || (isRecovered || isNoAction ? "0.00" : decRecoverable);
   const currency = caseData.currency || "USD";
 
-  const probDecimal = selectedEval?.success_probability ?? 0.75;
+  const probDecimal = primaryEval?.success_probability ?? 0.80;
   const probPercent = (probDecimal * 100).toFixed(0);
   const baseAmount = parseFloat(decRecoverable);
   const grossRecovery = (baseAmount * probDecimal).toFixed(2);
-  const cost = selectedEval?.intervention_cost ? parseFloat(selectedEval.intervention_cost).toFixed(2) : "0.50";
-  const netRecovery = selectedEval?.expected_net_recovery ? parseFloat(selectedEval.expected_net_recovery).toFixed(2) : (baseAmount * probDecimal - parseFloat(cost)).toFixed(2);
+  const cost = primaryEval?.intervention_cost ? parseFloat(primaryEval.intervention_cost).toFixed(2) : "50.00";
+  const netRecovery = primaryEval?.expected_net_recovery !== undefined && primaryEval?.expected_net_recovery !== null
+    ? parseFloat(primaryEval.expected_net_recovery).toFixed(2)
+    : (baseAmount * probDecimal - parseFloat(cost)).toFixed(2);
 
   const customerName = formatSyntheticCustomerName(null, caseData.customer_id || caseData.case_id);
   const orderCompact = formatCompactId(caseData.order_external_id || (caseData.order_id ? String(caseData.order_id) : null), "ORD");
@@ -177,13 +182,18 @@ export function RecoveryCasePanel({ caseData }: RecoveryCasePanelProps) {
                   </div>
                   <div className="border-t-2 border-stone-700 pt-2.5 flex justify-between text-sm">
                     <span className="font-sans font-bold text-white tracking-tight">EXPECTED NET RECOVERY</span>
-                    <span className="font-mono font-black text-emerald-400 text-base">${netRecovery}</span>
+                    <span className={`font-mono font-black text-base ${parseFloat(netRecovery) > 0 && !isNoAction ? "text-emerald-400" : "text-rose-400"}`}>
+                      ${netRecovery}
+                    </span>
                   </div>
                 </div>
 
                 {isNoAction && (
                   <div className="rounded-lg bg-rose-950/80 border border-rose-800/80 p-3.5 text-rose-200 text-xs font-sans leading-relaxed">
-                    🛑 <strong>RECLAIM STOPPED — Intervention Unviable:</strong> Intervention was evaluated and not economically justified. NO ACTION. Capital preserved: <strong>${baseAmount.toFixed(2)}</strong>.
+                    🛑 <strong>RECLAIM STOPPED — Intervention Unviable:</strong>{" "}
+                    {parseFloat(netRecovery) <= 0
+                      ? `Intervention was evaluated and not economically justified (Expected Net Recovery $${netRecovery} ≤ $0.00). NO ACTION. Capital preserved: $${baseAmount.toFixed(2)}.`
+                      : `Intervention was halted by Policy Gate safety constraints. NO ACTION. Capital preserved: $${baseAmount.toFixed(2)}.`}
                   </div>
                 )}
               </div>

@@ -133,9 +133,15 @@ def _reconstruct_decision_time_evaluations(case: RecoveryCase) -> List[Dict[str,
             contributing_payments=[cp],
         )
 
+        saved_costs = case.details.get("intervention_costs") if (case and isinstance(case.details, dict)) else None
+        if saved_costs and isinstance(saved_costs, dict):
+            intervention_costs = {k: Decimal(str(v)) for k, v in saved_costs.items()}
+        else:
+            intervention_costs = DEFAULT_INTERVENTION_COSTS
+
         candidates = generate_candidates(diag_result, rev_truth)
         probabilities = {cand.action: estimate(diag_result, rev_truth, cand.action, now=now_ts) for cand in candidates}
-        economic_evals = evaluate_batch(candidates, probabilities, rev_truth, DEFAULT_INTERVENTION_COSTS)
+        economic_evals = evaluate_batch(candidates, probabilities, rev_truth, intervention_costs)
 
         eval_map = {e.action: e for e in economic_evals}
 

@@ -203,3 +203,57 @@ def test_production_environment_guard_blocks_demo_endpoints(client, monkeypatch)
     res4 = client.post("/api/demo/batch")
     assert res4.status_code == 403
     assert "disabled in production" in res4.json()["detail"]
+
+
+def test_showcase_47_dollar_no_action_is_genuinely_unjustified(client, db_session):
+    """Verify the $47 demo scenario is genuinely NO_ACTION with net recovery <= 0 for all eligible candidates."""
+    run_id = f"test-no-action-47-{uuid.uuid4()}"
+    res = client.post("/api/demo/no-action-scenario", json={"demo_run_id": run_id})
+    assert res.status_code == 200
+    data = res.json()
+    assert data["case_status"] == "NO_ACTION"
+    assert data["recommended_action"] is None
+    assert data["amount"] == "47.00"
+
+    c_res = client.get(f"/api/recovery-cases/{data['case_id']}")
+    assert c_res.status_code == 200
+    c_data = c_res.json()
+
+    evals = c_data["decision_snapshot"]["action_evaluations"]
+    eligible_evals = [e for e in evals if e["eligible"]]
+    assert len(eligible_evals) > 0
+
+    for e in eligible_evals:
+        assert e["economically_viable"] is False
+        assert Decimal(e["expected_net_recovery"]) <= Decimal("0.00")
+        assert e["why_not"] == "Expected recovery does not exceed intervention cost"
+
+
+def test_displayed_economics_equal_backend_decision_economics(client, db_session):
+    """Verify that case detail action_evaluations use exact decision-time costs ($50.00) matching backend."""
+    run_id = f"test-disp-econ-{uuid.uuid4()}"
+    res = client.post("/api/demo/no-action-scenario", json={"demo_run_id": run_id})
+    case_id = res.json()["case_id"]
+
+    c_res = client.get(f"/api/recovery-cases/{case_id}")
+    c_data = c_res.json()
+    evals = c_data["decision_snapshot"]["action_evaluations"]
+    notify_eval = next(e for e in evals if e["action"] == "notify_customer_failure")
+
+    assert notify_eval["intervention_cost"] == "50.00"
+    assert Decimal(notify_eval["expected_net_recovery"]) < Decimal("0.00")
+    assert notify_eval["economically_viable"] is False
+
+
+def test_final_decision_explanation_matches_decision_reason(client, db_session):
+    """Verify that NO_ACTION decision rationale matches 'No economically viable eligible actions'."""
+    run_id = f"test-explanation-{uuid.uuid4()}"
+    res = client.post("/api/demo/no-action-scenario", json={"demo_run_id": run_id})
+    case_id = res.json()["case_id"]
+
+    c_res = client.get(f"/api/recovery-cases/{case_id}")
+    c_data = c_res.json()
+    snapshot = c_data["decision_snapshot"]
+    assert snapshot["decision"] == "NO_ACTION"
+    assert "No economically viable eligible actions" in snapshot["decision_rationale"]
+

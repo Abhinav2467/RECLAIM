@@ -261,10 +261,10 @@ The showcase batch runner ([`apps/api/app/api/demo.py`](apps/api/app/api/demo.py
 
 ## 14. Verification & Test Strategy
 
-RECLAIM features **185 collected and passing backend tests** (`PYTHONPATH=. .venv/bin/pytest tests/` + `PYTHONPATH=. .venv/bin/python scripts/test_app_flows.py`):
+RECLAIM features **189 collected and passing backend tests** (`PYTHONPATH=. .venv/bin/pytest tests/` + `PYTHONPATH=. .venv/bin/python scripts/test_app_flows.py`):
 
 ```
-185 passed, 0 failed, 0 skipped, 0 warnings
+189 passed, 0 failed, 0 skipped, 0 warnings
 ```
 
 ### **Test File Inventory**:
@@ -272,9 +272,9 @@ RECLAIM features **185 collected and passing backend tests** (`PYTHONPATH=. .ven
 * `tests/test_auth.py` (8 tests): Password hashing, session tokens, login/signup API & merchant isolation
 * `tests/test_decision.py` (10 tests): Economic decision formula, gross vs net recovery, `NO_ACTION` selection
 * `tests/test_decision_agent.py` (10 tests): LangGraph decision agent transitions & state pipeline execution
-* `tests/test_demo_scenario_api.py` (8 tests): Showcase scenario runner, batch idempotency & state verification
+* `tests/test_demo_scenario_api.py` (11 tests): Showcase scenario runner, batch idempotency & NO_ACTION economic regression tests
 * `tests/test_diagnosis.py` (13 tests): Contextual failure classification, stale auth detection & confidence ratings
-* `tests/test_economics.py` (9 tests): Net recovery arithmetic, probability weighting & friction cost deduction
+* `tests/test_economics.py` (10 tests): Net recovery arithmetic, probability weighting, friction cost deduction & positive net recovery invariant
 * `tests/test_execution.py` (8 tests): Bounded action dispatch, execution idempotency & status transitions
 * `tests/test_executive_summary.py` (5 tests): Executive summary formatting & contextual explanation synthesis
 * `tests/test_policy.py` (14 tests): Context version freshness, autonomous budget caps & contact fatigue guardrails

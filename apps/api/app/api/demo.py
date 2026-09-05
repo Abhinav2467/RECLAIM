@@ -480,7 +480,10 @@ def seed_demo_no_action_scenario(
     provider = MockDefaultProvider(behavior="success", provider_reference=provider_payment_id)
     # Pass higher cost thresholds for manual/case creation so small $47.00 payment yields expected_net <= 0
     custom_costs = {
+        "attempt_capture_retry": Decimal("50.00"),
         "notify_customer_failure": Decimal("50.00"),
+        "send_cart_recovery_email": Decimal("50.00"),
+        "offer_discount": Decimal("50.00"),
         "manual_review": Decimal("50.00"),
         "collect_more_evidence": Decimal("50.00"),
         "create_recovery_case": Decimal("50.00"),
