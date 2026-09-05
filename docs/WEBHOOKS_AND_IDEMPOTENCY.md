@@ -4,9 +4,22 @@
 
 ---
 
-## 1. Overview
+## 1. Overview & Razorpay Integration Boundary
 
 Payment webhooks arrive over un-trusted public networks. RECLAIM implements a secure event gate ([`apps/api/app/api/webhooks.py`](../apps/api/app/api/webhooks.py)) that authenticates webhook payloads, deduplicates events, and reconciles state idempotently.
+
+### **Razorpay Integration Implementation Scope**
+* **IMPLEMENTED & VERIFIED**:
+  * Razorpay webhook signature verification (`X-Razorpay-Signature`)
+  * Raw-body HMAC SHA256 verification intercepting request bytes before JSON parsing
+  * Database event deduplication on `(merchant_id, provider_event_id)`
+  * Gateway event normalization (`payment.failed`, `payment.authorized`, `payment.captured`, `order.paid`)
+  * Authoritative payment state reconciliation
+  * Razorpay provider adapter boundary ([`apps/api/app/domain/adapters/razorpay.py`](../apps/api/app/domain/adapters/razorpay.py))
+* **NOT LIVE BY DEFAULT**:
+  * Production automated capture execution against real bank networks
+  * Production gateway credentials
+  * Live external recovery execution against real customer accounts
 
 ---
 

@@ -1,6 +1,6 @@
 # Test Strategy & Verification Invariants
 
-> **RECLAIM Verification**: 185 Verified Unit, Integration, Scenario & System Invariant Tests
+> **RECLAIM Verification**: 185 Verified Unit, Integration, Scenario & System Invariant Tests (185 passed, 0 failed, 0 skipped, 0 warnings)
 
 ---
 
@@ -10,7 +10,7 @@ In financial software, automated test suites are not merely code quality checksâ
 
 1. **Invariant 1 (Monetary Non-Negative Conservation)**: $A_{\text{recoverable}} = A_{\text{expected}} - A_{\text{captured}} \ge 0$. Current Risk Exposure equals \$0.00 **only** when $A_{\text{captured}} = A_{\text{expected}}$.
 2. **Invariant 2 (Economic Decision Rationality)**: An action $a$ is selected if and only if Expected Net Recovery $(a) > 0$ and $a$ is eligible. Otherwise, status **must** equal `NO_ACTION`.
-3. **Invariant 3 (Execution Separation)**: Dispatching an intervention transitions status to `EXECUTING` or `VERIFYING`. Risk exposure **must not** drop to $0.00$ upon execution dispatch.
+3. **Invariant 3 (Execution Separation)**: Dispatching an intervention transitions status to `EXECUTING` or `VERIFYING`. Risk exposure **must not** drop to \$0.00 upon execution dispatch.
 4. **Invariant 4 (Active Case Uniqueness & Idempotency)**: Re-delivering identical webhook events or re-running showcase batch IDs produces 0 duplicate active cases or duplicate financial records.
 
 ---
@@ -19,7 +19,8 @@ In financial software, automated test suites are not merely code quality checksâ
 
 ### **Backend Pytest Suite Results (`apps/api`)**
 ```bash
-PYTHONPATH=. .venv/bin/pytest -q
+PYTHONPATH=. .venv/bin/pytest tests/
+PYTHONPATH=. .venv/bin/python scripts/test_app_flows.py
 ```
 **Output**: `185 passed in 8.32s` (0 failed, 0 skipped, 0 warnings).
 
@@ -32,22 +33,34 @@ npx tsc --noEmit
 
 ---
 
-## 3. Test Module Inventory & Categorization
+## 3. Test File Inventory & Categorization
 
-| Test Category | Test File | Items | Verification Scope |
-| :--- | :--- | :--- | :--- |
-| **Action Competition** | `tests/test_actions.py` | 7 | Candidate generation, eligibility filtering, and deterministic action ranking. |
-| **Auth & Scoping** | `tests/test_auth_api.py`, `tests/test_auth.py` | 7 | HTTP-only cookie auth, `/api/auth/me`, password hashing, and merchant isolation. |
-| **Demo Scenarios** | `tests/test_demo_scenario_api.py` | 5 | Stale auth recovery, payment capture verification, `NO_ACTION` scenario, and batch idempotency. |
-| **Event Gate & Dedupe** | `tests/test_event_gate.py` | 2 | HMAC signature validation, webhook event deduplication, and out-of-order sequencing. |
-| **Overview Read Model** | `tests/test_overview_api.py` | 1 | Portfolio aggregate formulas (*Revenue at Risk*, *Verified Recovered*, *Capital Preserved*). |
-| **Policy Engine** | `tests/test_policy_engine.py` | 1 | Context version guard, autonomous budget caps, and contact fatigue enforcement. |
-| **Provider Adapters** | `tests/test_provider_adapters.py` | 1 | Razorpay signature verification and payload normalization. |
-| **Recovery Engine** | `tests/test_recovery_engine.py` | 2 | Full 10-stage decision pipeline execution and `NO_ACTION` decision paths. |
-| **Verification Reconciliation** | `tests/test_verification_reconciliation.py` | 1 | Transitioning `VERIFYING` cases to `RECOVERED` upon gateway settlement. |
-| **Webhook Security** | `tests/test_webhook_raw_body.py` | 1 | Intercepting raw request bytes for HMAC SHA256 signature verification. |
-| **App Flow Validation** | `scripts/test_app_flows.py` | 1 | Full end-to-end FastAPI application state flow execution script. |
-| **Domain & Unit Invariants** | `tests/` & sub-modules | 156 | Unit tests covering economic formulas, state transitions, state graph nodes, and formatters. |
+| Test File | Items | Verification Scope |
+| :--- | :--- | :--- |
+| `tests/test_actions.py` | 7 | Action candidate generation & eligibility ranking |
+| `tests/test_auth.py` | 8 | Password hashing, session tokens, login/signup API & merchant isolation |
+| `tests/test_decision.py` | 10 | Economic decision formula, gross vs net recovery, `NO_ACTION` selection |
+| `tests/test_decision_agent.py` | 10 | LangGraph decision agent transitions & state pipeline execution |
+| `tests/test_demo_scenario_api.py` | 8 | Showcase scenario runner, batch idempotency & state verification |
+| `tests/test_diagnosis.py` | 13 | Contextual failure classification, stale auth detection & confidence ratings |
+| `tests/test_economics.py` | 9 | Net recovery arithmetic, probability weighting & friction cost deduction |
+| `tests/test_execution.py` | 8 | Bounded action dispatch, execution idempotency & status transitions |
+| `tests/test_executive_summary.py` | 5 | Executive summary formatting & contextual explanation synthesis |
+| `tests/test_policy.py` | 14 | Context version freshness, autonomous budget caps & contact fatigue guardrails |
+| `tests/test_probability.py` | 9 | Contextual probability estimations & heuristic bound assertions |
+| `tests/test_razorpay_adapter.py` | 5 | Provider adapter protocol conformance & disabled mode bounds |
+| `tests/test_razorpay_normalizer.py` | 10 | Gateway payload mapping & webhook event normalization |
+| `tests/test_razorpay_webhook.py` | 5 | Webhook signature verification & missing header handling |
+| `tests/test_razorpay_webhook_processing.py` | 5 | End-to-end webhook processing & state reconciliation |
+| `tests/test_reconciler.py` | 10 | Gateway capture reconciliation & order status updates |
+| `tests/test_recovery_cases_api.py` | 4 | Cases explorer API, detail view snapshots & error handling |
+| `tests/test_recovery_overview.py` | 5 | Portfolio aggregate calculations (*Revenue at Risk*, *Recovered*, *Capital Preserved*) |
+| `tests/test_recovery_persistence.py` | 5 | Case persistence, state event appending & concurrency control |
+| `tests/test_recovery_pipeline.py` | 8 | Pipeline orchestrator, context building & 2-step verification loop |
+| `tests/test_revenue_truth.py` | 12 | Expected vs captured accounting, recoverable exposure & currency rules |
+| `tests/test_sse_stream_api.py` | 3 | Real-time SSE streaming, cursor resuming & terminal event handling |
+| `tests/test_verification.py` | 6 | Verification engine, `EXECUTED` vs `RECOVERED` state boundaries |
+| `scripts/test_app_flows.py` | 6 | Full end-to-end FastAPI application state flow execution script |
 
 ---
 

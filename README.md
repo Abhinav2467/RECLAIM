@@ -220,9 +220,25 @@ RECLAIM enforces five safety layers ([`apps/api/app/domain/policy.py`](apps/api/
 
 ---
 
-## 12. Webhook Security & Idempotency
+## 12. Razorpay Integration Boundary, Webhook Security & Idempotency
 
-* **HMAC SHA256 Signature Verification**: Intercepts raw request bytes (`request.body()`) before JSON parsing to verify `X-Razorpay-Signature` against `RAZORPAY_WEBHOOK_SECRET` ([`apps/api/app/api/webhooks.py`](apps/api/app/api/webhooks.py)).
+RECLAIM clearly defines its gateway integration boundary:
+
+### **Integration Implementation Scope**
+* **IMPLEMENTED & VERIFIED**:
+  * Razorpay webhook signature verification (`X-Razorpay-Signature`)
+  * Raw-body HMAC SHA256 verification intercepting request bytes before JSON parsing ([`apps/api/app/api/webhooks.py`](apps/api/app/api/webhooks.py))
+  * Database event deduplication on `(merchant_id, provider_event_id)`
+  * Gateway event normalization (`payment.failed`, `payment.authorized`, `payment.captured`, `order.paid`)
+  * Authoritative payment state reconciliation
+  * Razorpay provider adapter boundary ([`apps/api/app/domain/adapters/razorpay.py`](apps/api/app/domain/adapters/razorpay.py))
+* **NOT LIVE BY DEFAULT**:
+  * Production automated capture execution against real bank networks
+  * Production gateway credentials
+  * Live external recovery execution against real customer accounts
+
+### **Idempotency & Event Rules**
+* **HMAC SHA256 Signature Verification**: Intercepts raw request bytes (`request.body()`) before JSON parsing to verify `X-Razorpay-Signature` against `RAZORPAY_WEBHOOK_SECRET`.
 * **Event Deduplication**: Database unique index on `(merchant_id, provider_event_id)` prevents duplicate webhook processing.
 * **Showcase Batch Idempotency**: `POST /api/demo/batch` accepts `batch_run_id`; repeated requests with the same batch ID return existing cases without duplicating historical records.
 
@@ -245,28 +261,37 @@ The showcase batch runner ([`apps/api/app/api/demo.py`](apps/api/app/api/demo.py
 
 ## 14. Verification & Test Strategy
 
-RECLAIM features **185 collected and passing backend tests** (`PYTHONPATH=. .venv/bin/pytest -q`):
+RECLAIM features **185 collected and passing backend tests** (`PYTHONPATH=. .venv/bin/pytest tests/` + `PYTHONPATH=. .venv/bin/python scripts/test_app_flows.py`):
 
 ```
-........................................................................ [ 38%]
-........................................................................ [ 77%]
-..........................................                               [100%]
-185 passed in 8.32s
+185 passed, 0 failed, 0 skipped, 0 warnings
 ```
 
-### **Test Distribution Inventory**:
-* **Action Candidate Competition** (`tests/test_actions.py`): 7 tests
-* **Authentication & Scoping** (`tests/test_auth_api.py`, `tests/test_auth.py`): 7 tests
-* **Demo & Showcase Batch** (`tests/test_demo_scenario_api.py`): 5 tests
-* **Event Gate & Deduplication** (`tests/test_event_gate.py`): 2 tests
-* **Overview Read Model** (`tests/test_overview_api.py`): 1 test
-* **Policy Engine** (`tests/test_policy_engine.py`): 1 test
-* **Provider Adapters** (`tests/test_provider_adapters.py`): 1 test
-* **Recovery Engine Pipeline** (`tests/test_recovery_engine.py`): 2 tests
-* **Verification Reconciliation** (`tests/test_verification_reconciliation.py`): 1 test
-* **Webhook Raw Body Security** (`tests/test_webhook_raw_body.py`): 1 test
-* **Application Flow Validation** (`scripts/test_app_flows.py`): 1 full E2E flow test
-* **Unit & Core Domain Tests** (`scratch/` / `tests/`): 156 domain & unit tests
+### **Test File Inventory**:
+* `tests/test_actions.py` (7 tests): Action candidate generation & eligibility ranking
+* `tests/test_auth.py` (8 tests): Password hashing, session tokens, login/signup API & merchant isolation
+* `tests/test_decision.py` (10 tests): Economic decision formula, gross vs net recovery, `NO_ACTION` selection
+* `tests/test_decision_agent.py` (10 tests): LangGraph decision agent transitions & state pipeline execution
+* `tests/test_demo_scenario_api.py` (8 tests): Showcase scenario runner, batch idempotency & state verification
+* `tests/test_diagnosis.py` (13 tests): Contextual failure classification, stale auth detection & confidence ratings
+* `tests/test_economics.py` (9 tests): Net recovery arithmetic, probability weighting & friction cost deduction
+* `tests/test_execution.py` (8 tests): Bounded action dispatch, execution idempotency & status transitions
+* `tests/test_executive_summary.py` (5 tests): Executive summary formatting & contextual explanation synthesis
+* `tests/test_policy.py` (14 tests): Context version freshness, autonomous budget caps & contact fatigue guardrails
+* `tests/test_probability.py` (9 tests): Contextual probability estimations & heuristic bound assertions
+* `tests/test_razorpay_adapter.py` (5 tests): Provider adapter protocol conformance & disabled mode bounds
+* `tests/test_razorpay_normalizer.py` (10 tests): Gateway payload mapping & webhook event normalization
+* `tests/test_razorpay_webhook.py` (5 tests): Webhook signature verification & missing header handling
+* `tests/test_razorpay_webhook_processing.py` (5 tests): End-to-end webhook processing & state reconciliation
+* `tests/test_reconciler.py` (10 tests): Gateway capture reconciliation & order status updates
+* `tests/test_recovery_cases_api.py` (4 tests): Cases explorer API, detail view snapshots & error handling
+* `tests/test_recovery_overview.py` (5 tests): Portfolio aggregate calculations (*Revenue at Risk*, *Recovered*, *Capital Preserved*)
+* `tests/test_recovery_persistence.py` (5 tests): Case persistence, state event appending & concurrency control
+* `tests/test_recovery_pipeline.py` (8 tests): Pipeline orchestrator, context building & 2-step verification loop
+* `tests/test_revenue_truth.py` (12 tests): Expected vs captured accounting, recoverable exposure & currency rules
+* `tests/test_sse_stream_api.py` (3 tests): Real-time SSE streaming, cursor resuming & terminal event handling
+* `tests/test_verification.py` (6 tests): Verification engine, `EXECUTED` vs `RECOVERED` state boundaries
+* `scripts/test_app_flows.py` (6 E2E flow tests): Full end-to-end FastAPI application state flow execution script
 
 ---
 
