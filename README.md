@@ -182,9 +182,9 @@ $$\text{Expected Gross Recovery}(a) = A_{\text{recoverable}} \times P(\text{succ
 
 $$\text{Expected Net Recovery}(a) = \text{Expected Gross Recovery}(a) - C(\text{intervention}, a)$$
 
-$$\text{Winning Strategy } a^* = \operatorname{arg\,max}_{a \in \mathcal{A}} \left[ \text{Expected Net Recovery}(a) \right]$$
+$$\text{Winning Strategy } a^* = \max_{a \in \mathcal{A}} \left[ \text{Expected Net Recovery}(a) \right]$$
 
-$$\text{Decision} = \begin{cases} a^* & \text{if } \text{Expected Net Recovery}(a^*) > 0 \text{ and } a^* \text{ is eligible} \\ \text{NO\_ACTION} & \text{otherwise} \end{cases}$$
+$$\text{Decision} = \begin{cases} a^* & \text{if Expected Net Recovery}(a^*) > 0 \text{ and } a^* \text{ is eligible} \\ \text{NO\_ACTION} & \text{otherwise} \end{cases}$$
 
 ---
 
