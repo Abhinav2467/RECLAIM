@@ -80,10 +80,10 @@ sequenceDiagram
         Agent->>Agent: 2. Evaluate Candidate Interventions
         Agent->>Agent: 3. Calculate Expected Net Recovery
         
-        alt Net Recovery <= $0.00
+        alt Net Recovery <= \$0.00
             Agent->>DB: Record NO_ACTION (Capital Preserved)
             Agent->>SSE: Emit Event (Case Status = NO_ACTION)
-        else Net Recovery > $0.00
+        else Net Recovery > \$0.00
             Agent->>Policy: Evaluate Policy Bounds
             alt Policy Approved
                 Policy->>Exec: Dispatch Bounded Intervention
@@ -187,8 +187,8 @@ stateDiagram-v2
     CONTEXT_BUILDING --> DIAGNOSED: Classify Failure
     DIAGNOSED --> ECONOMICALLY_EVALUATED: Action Arena & Net Calc
 
-    ECONOMICALLY_EVALUATED --> NO_ACTION: Net <= $0.00 (Capital Preserved)
-    ECONOMICALLY_EVALUATED --> RECOMMENDATION_READY: Net > $0.00
+    ECONOMICALLY_EVALUATED --> NO_ACTION: Net <= \$0.00 (Capital Preserved)
+    ECONOMICALLY_EVALUATED --> RECOMMENDATION_READY: Net > \$0.00
 
     RECOMMENDATION_READY --> APPROVED: Policy Gate Passed
     RECOMMENDATION_READY --> NEEDS_REVIEW: Policy Cap Exceeded

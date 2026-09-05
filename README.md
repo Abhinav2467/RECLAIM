@@ -26,7 +26,7 @@ Merchant payment loss rarely arrives as a single obvious failure. It manifests a
 | **Stale Authorization** | Credit card authorization holds expire silently past gateway deadlines (e.g. 7 days). | Blind capture calls fail with gateway authorization errors, incurring processor rejection fees. |
 | **Gateway Timeout** | Temporary network glitches reject valid customer charges. | Indiscriminate retries cause chargebacks, duplicate customer charges, and processor flags. |
 | **Checkout Abandonment** | Orders created with authorized intent left uncompleted at payment step. | High outreach cost can exceed expected order margin for low-LTV customers. |
-| **Unviable Recovery** | Small-value order failure ($47.00) with high fixed outreach/intervention fees ($50.00). | Chasing the revenue results in a net financial loss for the merchant. |
+| **Unviable Recovery** | Small-value order failure (\$47.00) with high fixed outreach/intervention fees (\$50.00). | Chasing the revenue results in a net financial loss for the merchant. |
 
 Traditional recovery tools ask: *"Can we retry this charge?"*  
 RECLAIM asks: **"Is this revenue worth recovering, which intervention strategy yields the highest net return, does policy permit execution, and has the money authoritatively landed?"**
@@ -38,7 +38,7 @@ RECLAIM asks: **"Is this revenue worth recovering, which intervention strategy y
 ```
  ┌──────────────────────┐      ┌──────────────────────┐      ┌──────────────────────┐
  │   REVENUE TRUTH      │ ───► │  ECONOMIC DECISION   │ ───► │    POLICY SAFETY     │
- │  Authoritative State │      │ Net Recovery > $0.00 │      │  Bounded Autonomy    │
+ │  Authoritative State │      │ Net Recovery > \$0.00 │      │  Bounded Autonomy    │
  └──────────────────────┘      └──────────────────────┘      └──────────────────────┘
                                                                         │
  ┌──────────────────────┐      ┌──────────────────────┐                 │
@@ -48,7 +48,7 @@ RECLAIM asks: **"Is this revenue worth recovering, which intervention strategy y
 ```
 
 1. **Revenue Truth Before Action**: Never act on raw, unverified event logs. Establish order and payment provenance first.
-2. **Economics Before Intervention**: Evaluate competing candidate strategies mathematically. If expected net recovery $\le \$0.00$, deliberately halt execution (**`NO_ACTION`**).
+2. **Economics Before Intervention**: Evaluate competing candidate strategies mathematically. If expected net recovery $\le 0.00$, deliberately halt execution (**`NO_ACTION`**).
 3. **Policy Before Execution**: Validate every economically viable action against context freshness, merchant budget caps, and autonomous safety bounds.
 4. **Verification Before Recovery**: Treat execution dispatch as `EXECUTED`, leaving revenue exposed until gateway reconciliation authoritatively confirms `RECOVERED`.
 5. **Evidence Before Claims**: Record every decision step, candidate evaluation, policy check, and state transition in an immutable audit ledger.
@@ -117,7 +117,7 @@ flowchart TD
         RP -->|Authoritative Payment State| VK
         
         VK -->|Payment State = Captured| REC[State = RECOVERED]
-        EE -->|Net Recovery <= $0| NA[State = NO_ACTION / Capital Preserved]
+        EE -->|Net Recovery <= \$0| NA[State = NO_ACTION / Capital Preserved]
         
         REC --> Audit[Immutable Audit Ledger & SSE Stream]
         NA --> Audit
@@ -143,8 +143,8 @@ stateDiagram-v2
     CONTEXT_BUILDING --> DIAGNOSED: Contextual Classification
     DIAGNOSED --> ECONOMICALLY_EVALUATED: Candidate Competition & Arithmetic
     
-    ECONOMICALLY_EVALUATED --> NO_ACTION: Net Recovery <= $0.00 (Capital Preserved)
-    ECONOMICALLY_EVALUATED --> RECOMMENDATION_READY: Winning Action Net > $0.00
+    ECONOMICALLY_EVALUATED --> NO_ACTION: Net Recovery <= \$0.00 (Capital Preserved)
+    ECONOMICALLY_EVALUATED --> RECOMMENDATION_READY: Winning Action Net > \$0.00
     
     RECOMMENDATION_READY --> APPROVED: Policy Gate Passed
     RECOMMENDATION_READY --> NEEDS_REVIEW: Policy Violation
@@ -152,7 +152,7 @@ stateDiagram-v2
     APPROVED --> EXECUTING: Bounded Action Dispatched
     EXECUTING --> VERIFYING: Executed != Recovered
     
-    VERIFYING --> RECOVERED: Gateway Confirms Captured ($0 At Risk)
+    VERIFYING --> RECOVERED: Gateway Confirms Captured (\$0 At Risk)
     VERIFYING --> FAILED: Gateway Rejection / Timeout
     
     NO_ACTION --> [*]
@@ -170,7 +170,7 @@ RECLAIM establishes authoritative revenue numbers before evaluating actions ([`a
 * **Captured Amount ($A_{\text{captured}}$)**: Authoritatively settled gateway funds.
 * **Recoverable Amount ($A_{\text{recoverable}}$)**: Current financial exposure:
   $$A_{\text{recoverable}} = A_{\text{expected}} - A_{\text{captured}}$$
-* **Current Risk Exposure**: Reduced to **`$0.00`** only when $A_{\text{captured}} = A_{\text{expected}}$ (`RECOVERED`).
+* **Current Risk Exposure**: Reduced to **`\$0.00`** only when $A_{\text{captured}} = A_{\text{expected}}$ (`RECOVERED`).
 
 ---
 
@@ -198,13 +198,13 @@ $$
 
 ## 10. Why `NO_ACTION` Matters (Capital Preservation)
 
-In a representative small-value failure scenario ($47.00$ recoverable amount):
-* **Attempt Capture Retry**: Cost = $0.50, Probability = 0.65 $\rightarrow$ Expected Net = $30.05 - 50.00 = -$19.95.
-* **Manual Review**: Cost = $15.00, Probability = 0.40 $\rightarrow$ Expected Net = $18.80 - 15.00 = +$3.80 (Ineligible/Low).
-* **Outreach Email**: Cost = $0.10, Probability = 0.05 $\rightarrow$ Expected Net = $2.35 - 0.10 = +$2.25.
-* **Result**: Because all candidates yield $\le \$0.00$ net return or fall below policy thresholds, RECLAIM selects **`NO_ACTION`**.
+In a representative small-value failure scenario (\$47.00 recoverable amount):
+* **Attempt Capture Retry**: Cost = \$0.50, Probability = 0.65 → Expected Net = \$30.05 - \$50.00 = -\$19.95.
+* **Manual Review**: Cost = \$15.00, Probability = 0.40 → Expected Net = \$18.80 - \$15.00 = +\$3.80 (Ineligible/Low).
+* **Outreach Email**: Cost = \$0.10, Probability = 0.05 → Expected Net = \$2.35 - \$0.10 = +\$2.25.
+* **Result**: Because all candidates yield $\le 0.00$ net return or fall below policy thresholds, RECLAIM selects **`NO_ACTION`**.
 
-RECLAIM displays: `SYSTEM STOPPED // INTENTIONAL NO_ACTION — Capital Preserved: $47.00`.
+RECLAIM displays: `SYSTEM STOPPED // INTENTIONAL NO_ACTION — Capital Preserved: \$47.00`.
 
 ---
 
@@ -234,12 +234,12 @@ The showcase batch runner ([`apps/api/app/api/demo.py`](apps/api/app/api/demo.py
 
 | # | Scenario Name | Amount | Initial Status | Final Status | Key Demonstration |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 1 | `auth_stale_verifying` | $249.00 | `VERIFYING` | `VERIFYING` | Active gateway reconciliation awaiting capture event. |
-| 2 | `auth_stale_recovered` | $1,499.00 | `VERIFYING` | `RECOVERED` | Capture simulation transitions risk exposure to $0.00 in emerald. |
-| 3 | `payment_failure_notify` | $320.00 | `RECOMMENDATION_READY` | `RECOMMENDATION_READY` | Candidate competition selects customer payment update notification. |
-| 4 | `checkout_abandonment` | $780.00 | `RECOMMENDATION_READY` | `RECOMMENDATION_READY` | Evaluates abandoned cart recovery email outreach. |
-| 5 | `economically_unjustified` | $47.00 | `NO_ACTION` | `NO_ACTION` | Graph halts at Economic Gate; preserves $47.00 merchant capital. |
-| 6 | `auth_stale_recovered_small` | $89.00 | `VERIFYING` | `RECOVERED` | Small-value authorization capture recovery verification. |
+| 1 | `auth_stale_verifying` | \$249.00 | `VERIFYING` | `VERIFYING` | Active gateway reconciliation awaiting capture event. |
+| 2 | `auth_stale_recovered` | \$1,499.00 | `VERIFYING` | `RECOVERED` | Capture simulation transitions risk exposure to \$0.00 in emerald. |
+| 3 | `payment_failure_notify` | \$320.00 | `RECOMMENDATION_READY` | `RECOMMENDATION_READY` | Candidate competition selects customer payment update notification. |
+| 4 | `checkout_abandonment` | \$780.00 | `RECOMMENDATION_READY` | `RECOMMENDATION_READY` | Evaluates abandoned cart recovery email outreach. |
+| 5 | `economically_unjustified` | \$47.00 | `NO_ACTION` | `NO_ACTION` | Graph halts at Economic Gate; preserves \$47.00 merchant capital. |
+| 6 | `auth_stale_recovered_small` | \$89.00 | `VERIFYING` | `RECOVERED` | Small-value authorization capture recovery verification. |
 
 ---
 

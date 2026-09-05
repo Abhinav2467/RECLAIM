@@ -29,7 +29,7 @@ $$A_{\text{recoverable}} = A_{\text{expected}} - A_{\text{captured}}$$
 * While a case is in `VERIFYING`, `EXECUTING`, or `DIAGNOSED` status, the entire recoverable amount remains exposed:
   $$\text{Current Exposure} = A_{\text{recoverable}}$$
 * When gateway reconciliation confirms payment settlement (`status = RECOVERED`), the current risk exposure transitions to:
-  $$\text{Current Exposure} = \$0.00$$
+  $$\text{Current Exposure} = 0.00$$
 
 ---
 

@@ -6,7 +6,7 @@
 
 ## 1. Overview
 
-RECLAIM implements strict policy guardrails at every phase of the decision lifecycle ([`apps/api/app/domain/policy.py`](../apps/api/app/domain/policy.py)). An intervention is dispatched **only** if it passes both the economic test ($\text{Net Recovery} > \$0.00$) and all policy safety checks.
+RECLAIM implements strict policy guardrails at every phase of the decision lifecycle ([`apps/api/app/domain/policy.py`](../apps/api/app/domain/policy.py)). An intervention is dispatched **only** if it passes both the economic test ($\text{Net Recovery} > 0.00$) and all policy safety checks.
 
 ---
 
@@ -23,8 +23,8 @@ Protection           Net Calc > 0          Safety Checks           Exec != Rec  
 * Rejects decision evaluation if new gateway events arrived after context building began.
 
 ### **2. During Decision (Economic Viability Gate)**
-* Verifies that Expected Net Recovery > $0.00$.
-* If Expected Net Recovery $\le \$0.00$, selects **`NO_ACTION`** (Capital Preserved).
+* Verifies that Expected Net Recovery > \$0.00.
+* If Expected Net Recovery $\le 0.00$, selects **`NO_ACTION`** (Capital Preserved).
 
 ### **3. Before Execution (Policy Safety Approval Gate)**
 * **Autonomous Budget Cap**: Checks that merchant monthly intervention expenditure has not exceeded the designated cap.
@@ -37,7 +37,7 @@ Protection           Net Calc > 0          Safety Checks           Exec != Rec  
 
 ### **5. After Execution (Authoritative Gateway Verification)**
 * Current risk exposure remains exposed until gateway reconciliation processes a signed webhook confirming payment settlement (`payment_state = 'captured'`).
-* Only gateway settlement transitions case status to `RECOVERED` and risk to `$0.00`.
+* Only gateway settlement transitions case status to `RECOVERED` and risk to `\$0.00`.
 
 ---
 

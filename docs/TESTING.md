@@ -8,7 +8,7 @@
 
 In financial software, automated test suites are not merely code quality checks—they are **mathematical proofs of system correctness**. RECLAIM enforces four core system invariants across all test modules ([`apps/api/tests`](../apps/api/tests)):
 
-1. **Invariant 1 (Monetary Non-Negative Conservation)**: $A_{\text{recoverable}} = A_{\text{expected}} - A_{\text{captured}} \ge 0$. Current Risk Exposure equals $0.00$ **only** when $A_{\text{captured}} = A_{\text{expected}}$.
+1. **Invariant 1 (Monetary Non-Negative Conservation)**: $A_{\text{recoverable}} = A_{\text{expected}} - A_{\text{captured}} \ge 0$. Current Risk Exposure equals \$0.00 **only** when $A_{\text{captured}} = A_{\text{expected}}$.
 2. **Invariant 2 (Economic Decision Rationality)**: An action $a$ is selected if and only if Expected Net Recovery $(a) > 0$ and $a$ is eligible. Otherwise, status **must** equal `NO_ACTION`.
 3. **Invariant 3 (Execution Separation)**: Dispatching an intervention transitions status to `EXECUTING` or `VERIFYING`. Risk exposure **must not** drop to $0.00$ upon execution dispatch.
 4. **Invariant 4 (Active Case Uniqueness & Idempotency)**: Re-delivering identical webhook events or re-running showcase batch IDs produces 0 duplicate active cases or duplicate financial records.
