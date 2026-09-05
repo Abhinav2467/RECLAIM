@@ -1,0 +1,24 @@
+[project]
+name = "reclaim-api"
+version = "0.1.0"
+description = "RECLAIM Revenue Recovery Decision Engine API"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+  "fastapi==0.141.1",
+  "uvicorn[standard]>=0.35,<0.36",
+  "sqlalchemy>=2.0,<2.1",
+  "psycopg[binary]>=3.2,<4",
+  "alembic>=1.16,<2",
+  "pydantic>=2.11,<3",
+  "pydantic-settings>=2.10,<3",
+  "email-validator>=2.0,<3",
+  "httpx>=0.28,<1",
+  "langgraph>=1.0,<2",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.4,<9",
+  "pytest-asyncio>=1.1,<2",
+  "ruff>=0.12,<1",
+]

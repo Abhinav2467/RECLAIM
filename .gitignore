@@ -1,0 +1,32 @@
+# Environment & Credentials
+.env
+.env.*
+!.env.example
+
+# Python & Virtual Environment
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+*.db
+*.sqlite
+
+# Node & Next.js
+node_modules/
+.next/
+dist/
+out/
+build/
+coverage/
+
+# Scratch & Temporary Files
+scratch/
+*.log
+.DS_Store
+.idea/
+.vscode/
