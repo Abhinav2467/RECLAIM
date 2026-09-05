@@ -1,3 +1,4 @@
+import hashlib
 import uuid
 from datetime import datetime, timezone, timedelta
 from decimal import Decimal
@@ -47,6 +48,7 @@ DEMO_CURRENCY = "USD"
 
 class DemoScenarioRequest(BaseModel):
     demo_run_id: Optional[str] = None
+    amount: Optional[Decimal] = None
 
 
 class DemoCaptureRequest(BaseModel):
@@ -69,7 +71,8 @@ def _check_demo_env_guard() -> None:
 def _get_clean_run_id(demo_run_id: Optional[str]) -> tuple[str, str]:
     if not demo_run_id or not str(demo_run_id).strip():
         demo_run_id = str(uuid.uuid4())
-    clean_suffix = str(demo_run_id).replace("-", "").replace("_", "").lower()[:12]
+    raw_clean = str(demo_run_id).replace("-", "").replace("_", "").lower()
+    clean_suffix = hashlib.md5(raw_clean.encode("utf-8")).hexdigest()[:12]
     return demo_run_id, clean_suffix
 
 
@@ -102,7 +105,7 @@ def seed_demo_recovery_scenario(
 
     1. Checks environment guard (disabled in production).
     2. Resolves unique demo_run_id (generates UUID if omitted).
-    3. Deterministically selects transaction amount and customer name.
+    3. Deterministically selects transaction amount and customer name (or uses req.amount if provided).
     4. Derives external identifiers: cust_demo_<suffix>, ord_demo_<suffix>, pay_demo_<suffix>.
     5. If scenario run already exists, returns existing case idempotently.
     6. If new run, creates records and triggers recovery pipeline.
@@ -113,7 +116,11 @@ def seed_demo_recovery_scenario(
     input_run_id = (req.demo_run_id if req and req.demo_run_id else None) or demo_run_id
     run_id, clean_suffix = _get_clean_run_id(input_run_id)
 
-    amount = _get_deterministic_amount(clean_suffix, default_idx=3)  # default $249.00
+    input_amount = req.amount if req and req.amount is not None else None
+    if input_amount is not None:
+        amount = input_amount
+    else:
+        amount = _get_deterministic_amount(clean_suffix, default_idx=3)  # default $249.00
     customer_name = _get_synthetic_name(clean_suffix)
 
     merchant_id = user.merchant_id if user and hasattr(user, "merchant_id") else settings.razorpay_merchant_id
@@ -532,7 +539,11 @@ def seed_demo_checkout_abandonment_scenario(
     input_run_id = (req.demo_run_id if req and req.demo_run_id else None) or demo_run_id
     run_id, clean_suffix = _get_clean_run_id(input_run_id)
 
-    amount = _get_deterministic_amount(clean_suffix, default_idx=6)  # default $780.00
+    input_amount = req.amount if req and req.amount is not None else None
+    if input_amount is not None:
+        amount = input_amount
+    else:
+        amount = _get_deterministic_amount(clean_suffix, default_idx=6)  # default $780.00
     customer_name = _get_synthetic_name(clean_suffix)
 
     merchant_id = user.merchant_id if user and hasattr(user, "merchant_id") else settings.razorpay_merchant_id
@@ -663,12 +674,12 @@ def seed_demo_showcase_batch(
 
     # 1. Authorization Stale -> VERIFYING ($249.00)
     run_1 = f"batch_{clean_batch}_1"
-    res1 = seed_demo_recovery_scenario(req=DemoScenarioRequest(demo_run_id=run_1), user=user, db=db)
+    res1 = seed_demo_recovery_scenario(req=DemoScenarioRequest(demo_run_id=run_1, amount=Decimal("249.00")), user=user, db=db)
     cases_created.append({"run_id": run_1, "case_id": res1.get("case_id"), "scenario": "auth_stale_verifying"})
 
     # 2. Authorization Stale -> RECOVERED ($1,499.00)
     run_2 = f"batch_{clean_batch}_2"
-    res2 = seed_demo_recovery_scenario(req=DemoScenarioRequest(demo_run_id=run_2), user=user, db=db)
+    res2 = seed_demo_recovery_scenario(req=DemoScenarioRequest(demo_run_id=run_2, amount=Decimal("1499.00")), user=user, db=db)
     if res2.get("case_id"):
         simulate_demo_payment_capture(req=DemoCaptureRequest(case_id=res2["case_id"]), user=user, db=db)
     cases_created.append({"run_id": run_2, "case_id": res2.get("case_id"), "scenario": "auth_stale_recovered"})
@@ -701,7 +712,7 @@ def seed_demo_showcase_batch(
 
     # 4. Checkout Abandonment -> send_cart_recovery_email ($780.00)
     run_4 = f"batch_{clean_batch}_4"
-    res4 = seed_demo_checkout_abandonment_scenario(req=DemoScenarioRequest(demo_run_id=run_4), user=user, db=db)
+    res4 = seed_demo_checkout_abandonment_scenario(req=DemoScenarioRequest(demo_run_id=run_4, amount=Decimal("780.00")), user=user, db=db)
     cases_created.append({"run_id": run_4, "case_id": res4.get("case_id"), "scenario": "checkout_abandonment"})
 
     # 5. Economically Unjustified -> NO_ACTION ($47.00)
@@ -711,7 +722,7 @@ def seed_demo_showcase_batch(
 
     # 6. Authorization Stale -> RECOVERED ($89.00)
     run_6 = f"batch_{clean_batch}_6"
-    res6 = seed_demo_recovery_scenario(req=DemoScenarioRequest(demo_run_id=run_6), user=user, db=db)
+    res6 = seed_demo_recovery_scenario(req=DemoScenarioRequest(demo_run_id=run_6, amount=Decimal("89.00")), user=user, db=db)
     if res6.get("case_id"):
         simulate_demo_payment_capture(req=DemoCaptureRequest(case_id=res6["case_id"]), user=user, db=db)
     cases_created.append({"run_id": run_6, "case_id": res6.get("case_id"), "scenario": "auth_stale_recovered_small"})

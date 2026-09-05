@@ -19,15 +19,15 @@ export function RecoveryCasePanel({ caseData }: RecoveryCasePanelProps) {
   const isRecovered = caseData.status === "RECOVERED";
   const isVerifying = caseData.status === "VERIFYING";
 
-  const decRecoverable = snapshot?.recoverable_amount || caseData.recoverable_amount || "47.00";
+  const decRecoverable = snapshot?.recoverable_amount || caseData.recoverable_amount || "0.00";
   const currentAtRisk = caseData.current_state?.recoverable_amount || (isRecovered || isNoAction ? "0.00" : decRecoverable);
   const currency = caseData.currency || "USD";
 
-  const probDecimal = primaryEval?.success_probability ?? 0.80;
+  const probDecimal = primaryEval?.success_probability ?? 0.0;
   const probPercent = (probDecimal * 100).toFixed(0);
   const baseAmount = parseFloat(decRecoverable);
   const grossRecovery = (baseAmount * probDecimal).toFixed(2);
-  const cost = primaryEval?.intervention_cost ? parseFloat(primaryEval.intervention_cost).toFixed(2) : "50.00";
+  const cost = primaryEval?.intervention_cost ? parseFloat(primaryEval.intervention_cost).toFixed(2) : "0.00";
   const netRecovery = primaryEval?.expected_net_recovery !== undefined && primaryEval?.expected_net_recovery !== null
     ? parseFloat(primaryEval.expected_net_recovery).toFixed(2)
     : (baseAmount * probDecimal - parseFloat(cost)).toFixed(2);

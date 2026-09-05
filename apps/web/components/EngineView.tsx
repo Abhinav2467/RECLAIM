@@ -120,8 +120,8 @@ export function EngineView({
 
   // Compute exact arithmetic from authoritative case data
   const recAmount = parseFloat(selectedCase?.recoverable_amount || "0.00");
-  const prob = primaryEval?.success_probability ?? 0.80;
-  const cost = parseFloat(primaryEval?.intervention_cost || "50.00");
+  const prob = primaryEval?.success_probability ?? 0.0;
+  const cost = parseFloat(primaryEval?.intervention_cost || "0.00");
   const grossValue = recAmount * prob;
   const netRecovery = primaryEval?.expected_net_recovery !== undefined && primaryEval?.expected_net_recovery !== null
     ? parseFloat(primaryEval.expected_net_recovery)

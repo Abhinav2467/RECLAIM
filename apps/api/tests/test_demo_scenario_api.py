@@ -257,3 +257,85 @@ def test_final_decision_explanation_matches_decision_reason(client, db_session):
     assert snapshot["decision"] == "NO_ACTION"
     assert "No economically viable eligible actions" in snapshot["decision_rationale"]
 
+
+def test_showcase_batch_full_6_scenarios_and_aggregates(client, db_session):
+    """Verify seeding showcase batch creates 6 distinct unique showcase scenarios with exact expected amounts and statuses."""
+    batch_id = f"test-batch-full-{uuid.uuid4()}"
+    res = client.post("/api/demo/batch", json={"batch_run_id": batch_id})
+    assert res.status_code == 200
+    data = res.json()
+    assert data["total_cases_created"] == 6
+
+    cases = data["cases"]
+    case_ids = [c["case_id"] for c in cases]
+    assert len(set(case_ids)) == 6, "All 6 showcase case IDs must be distinct"
+
+    # Fetch merchant recovery overview
+    ov_res = client.get("/api/recovery/overview")
+    assert ov_res.status_code == 200
+    ov = ov_res.json()
+
+    assert ov["counts"]["total_cases"] == 6
+    assert ov["counts"]["verifying_cases"] == 3
+    assert ov["counts"]["recovered_cases"] == 2
+    assert ov["counts"]["no_action_cases"] == 1
+    assert ov["counts"]["failed_cases"] == 0
+
+    assert Decimal(ov["aggregates"]["recovered_amount"]) == Decimal("1588.00")  # 1499.00 + 89.00
+    assert Decimal(ov["aggregates"]["capital_preserved"]) == Decimal("47.00")   # 47.00
+    assert Decimal(ov["aggregates"]["revenue_at_risk"]) == Decimal("1349.00")   # 249.00 + 320.00 + 780.00
+
+
+def test_all_showcase_scenarios_invariant_consistency(client, db_session):
+    """Verify core invariants across all 6 showcase scenarios in the batch: backend decision == API snapshot == UI fields."""
+    batch_id = f"test-invariants-{uuid.uuid4()}"
+    res = client.post("/api/demo/batch", json={"batch_run_id": batch_id})
+    cases = res.json()["cases"]
+
+    for c_info in cases:
+        cid = c_info["case_id"]
+        scenario = c_info["scenario"]
+
+        c_res = client.get(f"/api/recovery-cases/{cid}")
+        assert c_res.status_code == 200
+        c_data = c_res.json()
+
+        snapshot = c_data["decision_snapshot"]
+        current = c_data["current_state"]
+        evals = c_data["action_evaluations"]
+
+        # Invariant A: Displayed recoverable amount == decision-time recoverable amount
+        assert Decimal(c_data["recoverable_amount"]) == Decimal(snapshot["recoverable_amount"])
+
+        # Invariant F & G: Decision and rationale match snapshot
+        assert c_data["decision"] == snapshot["decision"]
+        assert c_data["decision_rationale"] == snapshot["decision_rationale"]
+
+        if scenario == "economically_unjustified_no_action":
+            # Invariant L: NO_ACTION economically unjustified must have expected_net <= 0 for all eligible candidates
+            assert c_data["status"] == "NO_ACTION"
+            assert c_data["recommended_action"] is None
+            for e in evals:
+                if e["eligible"]:
+                    assert e["economically_viable"] is False
+                    assert Decimal(e["expected_net_recovery"]) <= Decimal("0.00")
+        elif scenario in {"auth_stale_recovered", "auth_stale_recovered_small"}:
+            # Invariant K: RECOVERED appears ONLY when verification is RECOVERED
+            assert c_data["status"] == "RECOVERED"
+            assert current["verification_outcome"] == "RECOVERED"
+            assert current["payment_state"] == "captured"
+            assert Decimal(current["recoverable_amount"]) == Decimal("0.00")
+        else:
+            # Active verifying cases
+            assert c_data["status"] == "VERIFYING"
+            assert c_data["recommended_action"] is not None
+            sel_eval = next(e for e in evals if e["is_selected"])
+            # Invariant D & E: Gross & net recovery arithmetic
+            rec_amt = Decimal(c_data["recoverable_amount"])
+            prob = Decimal(str(sel_eval["success_probability"]))
+            cost = Decimal(str(sel_eval["intervention_cost"]))
+            expected_gross = rec_amt * prob
+            expected_net = expected_gross - cost
+            assert Decimal(sel_eval["expected_net_recovery"]) == expected_net
+
+

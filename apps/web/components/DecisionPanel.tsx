@@ -52,11 +52,11 @@ export function DecisionPanel({ caseData }: DecisionPanelProps) {
                 </div>
                 <div className="flex items-center gap-3 text-xs font-mono">
                   <span className="text-stone-400">
-                    Prob: <strong className="text-white font-bold">{((selectedEval.success_probability ?? 0.75) * 100).toFixed(0)}%</strong>
+                    Prob: <strong className="text-white font-bold">{((selectedEval.success_probability ?? 0.0) * 100).toFixed(0)}%</strong>
                   </span>
                   <span className="text-stone-700">•</span>
                   <span>
-                    Expected Net: <strong className="text-emerald-400 font-black text-sm">${selectedEval.expected_net_recovery || "149.49"}</strong>
+                    Expected Net: <strong className="text-emerald-400 font-black text-sm">${selectedEval.expected_net_recovery !== null && selectedEval.expected_net_recovery !== undefined ? selectedEval.expected_net_recovery : "0.00"}</strong>
                   </span>
                 </div>
               </div>
